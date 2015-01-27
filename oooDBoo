@@ -1,0 +1,318 @@
+using System;
+using System.Linq;
+using cAlgo.API;
+using cAlgo.API.Indicators;
+using cAlgo.API.Internals;
+using cAlgo.Indicators;
+ 
+namespace cAlgo
+{
+    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.None)]
+    public class oodboo : Robot
+    {
+        [Parameter(DefaultValue = 10000)]
+        public int Volume { get; set; }
+ 
+        [Parameter(DefaultValue = 100)]
+        public int TP { get; set; }
+ 
+        [Parameter(DefaultValue = 0)]
+        public int SL { get; set; }
+ 
+        [Parameter(DefaultValue = 8)]
+        public int SpaceZone { get; set; }
+ 
+        [Parameter(DefaultValue = false)]
+        public bool onlyUp { get; set; }
+ 
+        [Parameter(DefaultValue = true)]
+        public bool set25Pips { get; set; }
+ 
+        [Parameter(DefaultValue = true)]
+        public bool set50Pips { get; set; }
+ 
+        [Parameter(DefaultValue = true)]
+        public bool set75Pips { get; set; }
+ 
+        [Parameter(DefaultValue = false)]
+        public bool setMarket { get; set; }
+ 
+        [Parameter(DefaultValue = false)]
+        public bool closePos { get; set; }
+ 
+        [Parameter(DefaultValue = 0, MinValue = 0)]
+        public int BackStop { get; set; }
+ 
+        [Parameter(DefaultValue = 5, MinValue = 0)]
+        public int BackStopValue { get; set; }
+ 
+        [Parameter(DefaultValue = 0, MinValue = 0)]
+        public int TrailingStop { get; set; }
+ 
+        [Parameter(DefaultValue = "breakermind.com")]
+        public string copyrights { get; set; }
+ 
+        private string label = "breakermind";
+        private int allow1 = 0;
+        private int allow2 = 0;
+        private double openprice = 0;
+ 
+        protected override void OnStart()
+        {
+            Print("cBot starting... openPrice: " + Symbol.Bid);
+            openprice = Symbol.Bid;
+            string txt0 = "Set pending orders on 100 Pips levels price. Works only on GBPJPY, EURJPY, USDJPY...";
+            string txt1 = "Copyrights 2014 breakermind.com - All rights reserved.";
+            Print(txt0);
+            Print(txt1);
+        }
+ 
+        protected override void OnBar()
+        {
+            Print("Open Positions : " + Positions.Count);
+            Print("Symbol Pip size: " + Symbol.PipSize);
+        }
+ 
+        protected override void OnTick()
+        {
+            double Bid = Symbol.Bid;
+            int level1 = (int)((Bid * 1000) / 1000);
+            int level2 = level1 + 1;
+ 
+ 
+            double level1Up = level1 + (SpaceZone * Symbol.PipSize);
+            double level1Dn = level1 - (SpaceZone * Symbol.PipSize);
+ 
+            double level2Up = level2 + (SpaceZone * Symbol.PipSize);
+            double level2Dn = level2 - (SpaceZone * Symbol.PipSize);
+ 
+            //Print(Bid);
+            //Print(levelUp + " " + level + " " + levelDn);
+ 
+            var name = "Up";
+            var text = "Up Level: " + level2.ToString();
+            var staticPos = StaticPosition.TopRight;
+            var color = Colors.Red;
+            ChartObjects.DrawText(name, text, staticPos, color);
+ 
+            name = "Dn";
+            text = "Dn Level: " + level1.ToString();
+            staticPos = StaticPosition.BottomRight;
+            color = Colors.DodgerBlue;
+            ChartObjects.DrawText(name, text, staticPos, color);
+ 
+            // zone up
+            ChartObjects.DrawHorizontalLine("line_" + level1Up, level1Up, Colors.Red);
+            ChartObjects.DrawHorizontalLine("line_" + level1, level1, Colors.Red);
+            ChartObjects.DrawHorizontalLine("line_" + level1Dn, level1Dn, Colors.Red);
+            // zone dn
+            ChartObjects.DrawHorizontalLine("line_" + level2Up, level2Up, Colors.DodgerBlue);
+            ChartObjects.DrawHorizontalLine("line_" + level2, level2, Colors.DodgerBlue);
+            ChartObjects.DrawHorizontalLine("line_" + level2Dn, level2Dn, Colors.DodgerBlue);
+// L1
+ 
+            if (Bid > level1Dn && Bid < level1Up && allow1 != level1)
+            {
+ 
+                //open orders close
+                if (closePos)
+                {
+                    foreach (var pos in Positions)
+                    {
+                        ClosePosition(pos);
+                    }
+                }
+                // pending orders close
+                foreach (var order in PendingOrders)
+                {
+                    CancelPendingOrder(order);
+                }
+ 
+                Print("Set pending orders Bid: " + Bid);
+                if (set25Pips)
+                {
+                    PlaceStopOrder(TradeType.Buy, Symbol, Volume, level1 + (25 * Symbol.PipSize), label, SL, TP);
+                }
+                if (set50Pips)
+                {
+                    PlaceStopOrder(TradeType.Buy, Symbol, Volume, level1 + (50 * Symbol.PipSize), label, SL, TP);
+                }
+                if (set75Pips)
+                {
+                    PlaceStopOrder(TradeType.Buy, Symbol, Volume, level1 + (75 * Symbol.PipSize), label, SL, TP);
+                }
+ 
+                if (level1 > openprice && setMarket)
+                {
+                    ExecuteMarketOrder(TradeType.Buy, Symbol, Volume, label, SL, TP);
+                }
+ 
+                if (level1 < openprice && setMarket)
+                {
+                    ExecuteMarketOrder(TradeType.Sell, Symbol, Volume, label, SL, TP);
+                }
+ 
+                if (set25Pips && onlyUp == false)
+                {
+                    PlaceStopOrder(TradeType.Sell, Symbol, Volume, level1 - (25 * Symbol.PipSize), label, SL, TP);
+                }
+                if (set50Pips && onlyUp == false)
+                {
+                    PlaceStopOrder(TradeType.Sell, Symbol, Volume, level1 - (50 * Symbol.PipSize), label, SL, TP);
+                }
+                if (set75Pips && onlyUp == false)
+                {
+                    PlaceStopOrder(TradeType.Sell, Symbol, Volume, level1 - (75 * Symbol.PipSize), label, SL, TP);
+                }
+ 
+                allow1 = level1;
+            }
+ 
+// L2
+ 
+ 
+            if (Bid > level2Dn && Bid < level2Up && allow2 != level2)
+            {
+ 
+                //open orders close
+                if (closePos)
+                {
+                    foreach (var pos in Positions)
+                    {
+                        ClosePosition(pos);
+                    }
+                }
+                // pending orders close
+                foreach (var order in PendingOrders)
+                {
+                    CancelPendingOrder(order);
+                }
+ 
+                Print("Set pending orders Bid: " + Bid);
+                if (set25Pips)
+                {
+                    PlaceStopOrder(TradeType.Buy, Symbol, Volume, level2 + (25 * Symbol.PipSize), label, SL, TP);
+                }
+                if (set50Pips)
+                {
+                    PlaceStopOrder(TradeType.Buy, Symbol, Volume, level2 + (50 * Symbol.PipSize), label, SL, TP);
+                }
+                if (set75Pips)
+                {
+                    PlaceStopOrder(TradeType.Buy, Symbol, Volume, level2 + (75 * Symbol.PipSize), label, SL, TP);
+                }
+ 
+                if (level2 > openprice && setMarket)
+                {
+                    ExecuteMarketOrder(TradeType.Buy, Symbol, Volume, label, SL, TP);
+                }
+ 
+                if (level2 < openprice && setMarket)
+                {
+                    ExecuteMarketOrder(TradeType.Sell, Symbol, Volume, label, SL, TP);
+                }
+ 
+                if (set25Pips && onlyUp == false)
+                {
+                    PlaceStopOrder(TradeType.Sell, Symbol, Volume, level2 - (25 * Symbol.PipSize), label, SL, TP);
+                }
+                if (set50Pips && onlyUp == false)
+                {
+                    PlaceStopOrder(TradeType.Sell, Symbol, Volume, level2 - (50 * Symbol.PipSize), label, SL, TP);
+                }
+                if (set75Pips && onlyUp == false)
+                {
+                    PlaceStopOrder(TradeType.Sell, Symbol, Volume, level2 - (75 * Symbol.PipSize), label, SL, TP);
+                }
+ 
+                allow2 = level2;
+            }
+ 
+ 
+            //===================================================== Back Trailing
+            if (BackStop > 0)
+            {
+                foreach (var openedPosition in Positions)
+                {
+                    Position Position = openedPosition;
+                    if (Position.TradeType == TradeType.Buy)
+                    {
+                        double distance = Symbol.Bid - Position.EntryPrice;
+ 
+                        if (distance >= BackStop * Symbol.PipSize)
+                        {
+                            double newStopLossPrice = Math.Round(Symbol.Bid - BackStopValue * Symbol.PipSize, Symbol.Digits);
+ 
+                            if (Position.StopLoss == null)
+                            {
+                                ModifyPosition(Position, newStopLossPrice, Position.TakeProfit);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        double distance = Position.EntryPrice - Symbol.Ask;
+ 
+                        if (distance >= BackStop * Symbol.PipSize)
+                        {
+ 
+                            double newStopLossPrice = Math.Round(Symbol.Ask + BackStopValue * Symbol.PipSize, Symbol.Digits);
+ 
+                            if (Position.StopLoss == null)
+                            {
+                                ModifyPosition(Position, newStopLossPrice, Position.TakeProfit);
+                            }
+                        }
+                    }
+                }
+            }
+ 
+ 
+            //===================================================== Trailing
+            if (TrailingStop > 0 && BackStop == 0)
+            {
+                foreach (var openedPosition in Positions)
+                {
+                    Position Position = openedPosition;
+                    if (Position.TradeType == TradeType.Buy)
+                    {
+                        double distance = Symbol.Bid - Position.EntryPrice;
+ 
+                        if (distance >= TrailingStop * Symbol.PipSize)
+                        {
+                            double newStopLossPrice = Math.Round(Symbol.Bid - TrailingStop * Symbol.PipSize, Symbol.Digits);
+ 
+                            if (Position.StopLoss == null || newStopLossPrice > Position.StopLoss)
+                            {
+                                ModifyPosition(Position, newStopLossPrice, Position.TakeProfit);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        double distance = Position.EntryPrice - Symbol.Ask;
+ 
+                        if (distance >= TrailingStop * Symbol.PipSize)
+                        {
+ 
+                            double newStopLossPrice = Math.Round(Symbol.Ask + TrailingStop * Symbol.PipSize, Symbol.Digits);
+ 
+                            if (Position.StopLoss == null || newStopLossPrice < Position.StopLoss)
+                            {
+                                ModifyPosition(Position, newStopLossPrice, Position.TakeProfit);
+                            }
+                        }
+                    }
+                }
+            }
+ 
+ 
+ 
+        }
+ 
+        protected override void OnStop()
+        {
+            Print("cBot was stoped.");
+        }
+    }
+}
