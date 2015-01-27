@@ -1,0 +1,113 @@
+using System;
+using System.Linq;
+using cAlgo.API;
+using cAlgo.API.Indicators;
+using cAlgo.API.Internals;
+using cAlgo.Indicators;
+ 
+namespace cAlgo
+{
+    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.None)]
+    public class cBotRegression : Robot
+    {
+        [Parameter(DefaultValue = 1000, MinValue = 1000)]
+        public int Volume { get; set; }
+ 
+        [Parameter("Stop Loss (pips)", DefaultValue = 0, MinValue = 0)]
+        public int StopLossInPips { get; set; }
+ 
+        [Parameter("Take Profit (pips)", DefaultValue = 0, MinValue = 0)]
+        public int TakeProfitInPips { get; set; }
+ 
+        [Parameter("Auto Take Profit", DefaultValue = true)]
+        public bool AutoTP { get; set; }
+ 
+        [Parameter(DefaultValue = true)]
+        public bool closeOnReg { get; set; }
+ 
+        [Parameter(DefaultValue = 3, MinValue = 1, MaxValue = 4)]
+        public int RegDegree { get; set; }
+ 
+        [Parameter(DefaultValue = 2000, MinValue = 1)]
+        public int RegPeriod { get; set; }
+ 
+        [Parameter(DefaultValue = 2, MinValue = 1)]
+        public double RegStrdDev { get; set; }
+ 
+        [Parameter(DefaultValue = "breakermind.com")]
+        public string Copyrights { get; set; }
+ 
+        private const string label = "cBotRegression - breakermind.com";
+        private Regression cog;
+ 
+        protected override void OnStart()
+        {
+            string txt = "Install Regression2000 indicator first - http://ctdn.com/algos/indicators/show/571";
+            string txt0 = " If TakeProfitInPips or StopLossInPips = 0 - cBot dont set StopLoss or TakeProfit";
+            string txt1 = "If closeOnReg = true - cBot close positions on regression up(close buy) and down(close sell) backtest on M1";
+            string txt2 = "Copyrights 2014 breakermind.com - All rights reserved.";
+ 
+            Print(txt);
+            Print(txt0);
+            Print(txt1);
+            Print(txt2);
+ 
+            //How to Use custom indicator
+            cog = Indicators.GetIndicator<Regression>(RegDegree, RegPeriod, RegStrdDev);
+        }
+ 
+        protected override void OnTick()
+        {
+            double up = cog.sqh.LastValue;
+            double zero = cog.prc.LastValue;
+            double dn = cog.sql.LastValue;
+ 
+            if (AutoTP)
+            {
+                double val = (zero - Symbol.Bid);
+                TakeProfitInPips = (int)(val / Symbol.PipSize);
+            }
+ 
+ 
+            var name = "Up";
+            var text = "Up Reg: " + up.ToString();
+            var staticPos = StaticPosition.TopRight;
+            var color = Colors.Red;
+            ChartObjects.DrawText(name, text, staticPos, color);
+ 
+            name = "Dn";
+            text = "Dn Reg: " + dn.ToString();
+            staticPos = StaticPosition.BottomRight;
+            color = Colors.Blue;
+            ChartObjects.DrawText(name, text, staticPos, color);
+ 
+            var pos = Positions.Find(label, Symbol);
+            var longPosition = Positions.Find(label, Symbol, TradeType.Buy);
+            var shortPosition = Positions.Find(label, Symbol, TradeType.Sell);
+ 
+            if (pos == null)
+            {
+ 
+                if (Symbol.Bid <= dn)
+                {
+ 
+                    if (shortPosition != null && closeOnReg == true)
+                    {
+                        ClosePosition(shortPosition);
+                    }
+                    ExecuteMarketOrder(TradeType.Buy, Symbol, Volume, label, StopLossInPips, TakeProfitInPips);
+                }
+ 
+                if (Symbol.Ask >= up)
+                {
+                    if (longPosition != null && closeOnReg == true)
+                    {
+                        ClosePosition(longPosition);
+                    }
+                    ExecuteMarketOrder(TradeType.Sell, Symbol, Volume, label, StopLossInPips, TakeProfitInPips);
+                }
+            }
+ 
+        }
+    }
+}
