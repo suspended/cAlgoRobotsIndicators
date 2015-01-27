@@ -1,0 +1,112 @@
+using System;
+using System.Linq;
+using cAlgo.API;
+using cAlgo.API.Indicators;
+using cAlgo.API.Internals;
+using cAlgo.Indicators;
+ 
+namespace cAlgo
+{
+    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.None)]
+    public class Break : Robot
+    {
+ 
+        [Parameter(DefaultValue = 10000, MinValue = 0)]
+        public int Volume { get; set; }
+ 
+        private Break_Out_Channel cog;
+        private const string label = "vvvvv";
+ 
+ 
+ 
+        [Parameter("Stop Loss (pips)", DefaultValue = 100, MinValue = 1)]
+        public int StopLossInPips { get; set; }
+ 
+        [Parameter("Take Profit (pips)", DefaultValue = 100, MinValue = 1)]
+        public int TakeProfitInPips { get; set; }
+ 
+ 
+        protected override void OnStart()
+        {
+            Print("cBot started!");
+        }
+ 
+ 
+        private int bars = 0;
+ 
+        protected override void OnBar()
+        {
+            bars = bars + 1;
+            //Print("Bars: " + bars);
+        }
+ 
+ 
+        protected override void OnTick()
+        {
+ 
+ 
+            var longPosition = Positions.Find(label, Symbol, TradeType.Buy);
+            var shortPosition = Positions.Find(label, Symbol, TradeType.Sell);
+ 
+ 
+ 
+            cog = Indicators.GetIndicator<Break_Out_Channel>();
+ 
+            double up = (double)cog.Up.LastValue;
+            double zero = (double)cog.Mid.LastValue;
+            double dn = (double)cog.Down.LastValue;
+ 
+            if (Symbol.Ask > up)
+            {
+                //Print("======================");
+            }
+            Print(Symbol.Ask + " > " + up);
+ 
+ 
+            if (Symbol.Bid < dn)
+            {
+                // Print("======================");
+            }
+ 
+            Print(Symbol.Bid + " < " + dn);
+            //ChartObjects.DrawHorizontalLine("line_" + up, up, Colors.Red);
+            //ChartObjects.DrawHorizontalLine("line_" + zero, zero, Colors.Gray);
+            //ChartObjects.DrawHorizontalLine("line_" + dn, dn, Colors.Blue);
+            int total = Positions.Count;
+            Print("Positions: " + total);
+            if (total == 0)
+            {
+ 
+                if (Symbol.Bid <= dn)
+                {
+ 
+                    Print("BUY");
+                    if (shortPosition != null)
+                    {
+                        // ClosePosition(shortPosition);
+                    }
+                    ExecuteMarketOrder(TradeType.Buy, Symbol, Volume, label, StopLossInPips, TakeProfitInPips);
+                    //ExecuteMarketOrder(TradeType.Sell, Symbol, Volume, label);
+                }
+ 
+                if (Symbol.Ask >= up)
+                {
+                    Print("SELL");
+                    if (longPosition != null)
+                    {
+                        //ClosePosition(longPosition);
+                    }
+                    ExecuteMarketOrder(TradeType.Sell, Symbol, Volume, label, StopLossInPips, TakeProfitInPips);
+                    //ExecuteMarketOrder(TradeType.Buy, Symbol, Volume, label);
+                }
+            }
+ 
+ 
+        }
+ 
+        protected override void OnStop()
+        {
+            Print("cBot started!");
+        }
+    }
+}
