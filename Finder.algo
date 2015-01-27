@@ -1,0 +1,74 @@
+using System;
+using System.Linq;
+using cAlgo.API;
+using cAlgo.API.Indicators;
+using cAlgo.API.Internals;
+using cAlgo.Indicators;
+ 
+namespace cAlgo
+{
+    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.None)]
+    public class Finder : Robot
+    {
+        [Parameter(DefaultValue = 10000)]
+        public int Volume { get; set; }
+ 
+        [Parameter(DefaultValue = 200)]
+        public int TP { get; set; }
+ 
+        [Parameter(DefaultValue = 100)]
+        public int SL { get; set; }
+ 
+        protected override void OnStart()
+        {
+            // Put your initialization logic here
+        }
+ 
+        protected override void OnTick()
+        {
+            // 190.555
+            double Bid = Symbol.Bid;
+            // 190
+            int leveldn = (int)((Bid * 1000) / 1000);
+            // 191
+            int levelup = leveldn + 1;
+ 
+ 
+ 
+            if (isSetLevel(levelup) == 0)
+            {
+                PlaceStopOrder(TradeType.Buy, Symbol, Volume, levelup, levelup.ToString(), SL, TP);
+                PlaceStopOrder(TradeType.Buy, Symbol, Volume, levelup, "0" + levelup.ToString(), SL + 20, TP + 200);
+            }
+ 
+            if (isSetLevel(leveldn) == 0)
+            {
+                PlaceStopOrder(TradeType.Sell, Symbol, Volume, leveldn, leveldn.ToString(), SL, TP);
+                PlaceStopOrder(TradeType.Sell, Symbol, Volume, leveldn, "1" + leveldn.ToString(), SL + 20, TP + 200);
+            }
+ 
+        }
+ 
+        private int isSetLevel(int Level1)
+        {
+            string Level = Level1.ToString();
+            int up = 0;
+            foreach (var pendingOrder in PendingOrders)
+            {
+                if (pendingOrder.Label == Level)
+                {
+                    up = 1;
+                }
+            }
+ 
+            if (Positions.Find(Level) != null)
+            {
+                up = 1;
+            }
+ 
+            return up;
+        }
+ 
+ 
+    }
+}
