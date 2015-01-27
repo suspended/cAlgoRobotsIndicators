@@ -1,0 +1,73 @@
+using System;
+using cAlgo.API;
+using cAlgo.API.Indicators;
+ 
+namespace cAlgo.Indicators
+{
+    [Indicator(IsOverlay = true, AccessRights = AccessRights.None, AutoRescale = false)]
+    //[Indicator(IsOverlay = true, AccessRights = AccessRights.None)]
+    public class Snake123 : Indicator
+    {
+        private MovingAverage expo;
+ 
+ 
+        [Parameter(DefaultValue = 500)]
+        public int EnvelopePeriod { get; set; }
+ 
+        [Parameter("Distance(Pips)", DefaultValue = 100)]
+        public double BandDistance { get; set; }
+ 
+        [Parameter("Distance Shift Up(Pips)", DefaultValue = 50)]
+        public int ShiftUp { get; set; }
+ 
+        [Parameter("Distance Shift Dn(Pips)", DefaultValue = 50)]
+        public int ShiftDn { get; set; }
+ 
+        [Output("Main", Color = Colors.White, LineStyle = LineStyle.Solid, Thickness = 2)]
+        public IndicatorDataSeries Snake0 { get; set; }
+ 
+        [Output("Snake1", Color = Colors.DodgerBlue, LineStyle = LineStyle.Lines, Thickness = 1)]
+        public IndicatorDataSeries Snake1 { get; set; }
+ 
+        [Output("Snake2", Color = Colors.Red, LineStyle = LineStyle.Lines, Thickness = 1)]
+        public IndicatorDataSeries Snake2 { get; set; }
+ 
+        [Output("Snake3", Color = Colors.YellowGreen, LineStyle = LineStyle.Lines, Thickness = 1)]
+        public IndicatorDataSeries Snake3 { get; set; }
+ 
+        [Parameter("MAType")]
+        public MovingAverageType matype { get; set; }
+ 
+        [Parameter(DefaultValue = 0, MinValue = -100, MaxValue = 500)]
+        public int Shift { get; set; }
+ 
+        protected override void Initialize()
+        {
+            expo = Indicators.MovingAverage(MarketSeries.Close, EnvelopePeriod, matype);
+        }
+ 
+        public override void Calculate(int index)
+        {
+ 
+            if (Shift < 0 && index < Math.Abs(Shift))
+                return;
+ 
+            Snake0[index + Shift] = expo.Result[index];
+            if (expo.Result[index] < MarketSeries.Close[index] && expo.Result[index] < MarketSeries.Close[index - 1] && expo.Result[index] < MarketSeries.Close[index - 2] && expo.Result[index] < MarketSeries.Close[index - 3])
+            {
+                Snake1[index + Shift] = expo.Result[index] + (BandDistance * Symbol.PipSize);
+                Snake2[index + Shift] = expo.Result[index] + ((BandDistance + ShiftUp) * Symbol.PipSize);
+                Snake3[index + Shift] = expo.Result[index] + ((BandDistance - ShiftUp) * Symbol.PipSize);
+ 
+ 
+            }
+            if (expo.Result[index] > MarketSeries.Close[index] && expo.Result[index] > MarketSeries.Close[index - 1] && expo.Result[index] > MarketSeries.Close[index - 2] && expo.Result[index] > MarketSeries.Close[index - 3])
+            {
+                Snake1[index + Shift] = expo.Result[index] - (BandDistance * Symbol.PipSize);
+                Snake2[index + Shift] = expo.Result[index] - ((BandDistance - ShiftUp) * Symbol.PipSize);
+                Snake3[index + Shift] = expo.Result[index] - ((BandDistance + ShiftDn) * Symbol.PipSize);
+ 
+            }
+        }
+    }
+}
