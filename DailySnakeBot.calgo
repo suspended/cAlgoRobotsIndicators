@@ -1,0 +1,71 @@
+using System;
+using System.Linq;
+using cAlgo.API;
+using cAlgo.API.Indicators;
+using cAlgo.API.Internals;
+using cAlgo.Indicators;
+ 
+namespace cAlgo
+{
+    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.None)]
+    public class cBotRegression : Robot
+    {
+        [Parameter(DefaultValue = 10000, MinValue = 1000)]
+        public int Volume { get; set; }
+ 
+        [Parameter("Stop Loss (pips)", DefaultValue = 50, MinValue = 0)]
+        public int StopLossInPips { get; set; }
+ 
+        [Parameter("Take Profit (pips)", DefaultValue = 50, MinValue = 0)]
+        public int TakeProfitInPips { get; set; }
+ 
+ 
+        private const string label = "ewrwerw";
+        private DailySnake cog;
+ 
+        protected override void OnStart()
+        {
+            string txt = "Install DailySnake indicator first";
+            string txt0 = " If TakeProfitInPips or StopLossInPips = 0 - cBot dont set StopLoss or TakeProfit";
+ 
+            Print(txt);
+            Print(txt0);
+ 
+            //How to Use custom indicator
+            cog = Indicators.GetIndicator<DailySnake>();
+        }
+ 
+        protected override void OnTick()
+        {
+            double open = cog.Open.LastValue;
+ 
+            var name = "Open";
+            var text = "Open: " + open.ToString();
+            var staticPos = StaticPosition.TopRight;
+            var color = Colors.Red;
+            ChartObjects.DrawText(name, text, staticPos, color);
+ 
+ 
+            var pos = Positions.Find(label, Symbol);
+            var longPosition = Positions.Find(label, Symbol, TradeType.Buy);
+            var shortPosition = Positions.Find(label, Symbol, TradeType.Sell);
+ 
+            if (pos == null)
+            {
+ 
+                if (Symbol.Bid > open)
+                {
+ 
+                    ExecuteMarketOrder(TradeType.Buy, Symbol, Volume, label, StopLossInPips, TakeProfitInPips);
+                }
+ 
+                if (Symbol.Ask < open)
+                {
+ 
+                    ExecuteMarketOrder(TradeType.Sell, Symbol, Volume, label, StopLossInPips, TakeProfitInPips);
+                }
+            }
+ 
+        }
+    }
+}
