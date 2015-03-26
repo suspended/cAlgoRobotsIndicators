@@ -1,0 +1,103 @@
+using System;
+using cAlgo.API;
+ 
+namespace cAlgo.Indicators
+{
+    [Indicator(IsOverlay = true, AccessRights = AccessRights.None)]
+    public class WeekOpen : Indicator
+    {
+        [Output("Open", Color = Colors.Green, PlotType = PlotType.Line, Thickness = 5)]
+        public IndicatorDataSeries Open { get; set; }
+ 
+        //[Output("Close", Color = Colors.Blue, PlotType = PlotType.Points)]
+        //public IndicatorDataSeries Close { get; set; }
+ 
+ 
+ 
+ 
+        public double openprice = 0;
+ 
+        public override void Calculate(int index)
+        {
+ 
+            if (index < 1)
+            {
+                // If first bar is first bar of the day set open
+                if (MarketSeries.OpenTime[index].TimeOfDay == TimeSpan.Zero)
+                    Open[index] = MarketSeries.Open[index];
+                return;
+            }
+ 
+            DateTime openTime = MarketSeries.OpenTime[index];
+            DateTime lastOpenTime = MarketSeries.OpenTime[index - 1];
+            const string objectName = "messageNA";
+ 
+            if (!ApplicableTimeFrame(openTime, lastOpenTime))
+            {
+                // Display message that timeframe is N/A
+                const string text = "TimeFrame Not Applicable. Choose a lower Timeframe";
+                ChartObjects.DrawText(objectName, text, StaticPosition.TopLeft, Colors.Red);
+                return;
+            }
+ 
+            // If TimeFrame chosen is applicable remove N/A message
+            ChartObjects.RemoveObject(objectName);
+ 
+            // Plot Daily Open and Close
+            PlotDailyOpenClose(openTime, lastOpenTime, index);
+ 
+            var name1 = "Dn";
+            var text1 = "Open : " + openprice.ToString();
+            var staticPos = StaticPosition.TopRight;
+            var color = Colors.Yellow;
+            ChartObjects.DrawText(name1, text1, staticPos, color);
+ 
+        }
+ 
+        private bool ApplicableTimeFrame(DateTime openTime, DateTime lastOpenTime)
+        {
+            // minutes difference between bars
+            var timeFrameMinutes = (int)(openTime - lastOpenTime).TotalMinutes;
+ 
+            bool daily = timeFrameMinutes == 1440;
+            bool weeklyOrGreater = timeFrameMinutes >= 7200;
+ 
+            bool timeFrameNotApplicable = daily || weeklyOrGreater;
+ 
+            if (timeFrameNotApplicable)
+                return false;
+ 
+            return true;
+        }
+ 
+        private void PlotDailyOpenClose(DateTime openTime, DateTime lastOpenTime, int index)
+        {
+ 
+            DateTime currentTime = MarketSeries.OpenTime[MarketSeries.OpenTime.Count - 1];
+            DateTime previousTime = MarketSeries.OpenTime[MarketSeries.OpenTime.Count - 2];
+ 
+            int index1 = MarketSeries.OpenTime.Count - 1;
+ 
+            // Day change
+            //if (openTime.Day != lastOpenTime.Day)
+            if (currentTime.DayOfWeek == DayOfWeek.Monday && previousTime.DayOfWeek != DayOfWeek.Monday)
+            {
+                // Plot Open
+                Open[index] = MarketSeries.Open[index];
+                openprice = MarketSeries.Open[index];
+            }
+            // Same Day
+            else
+            {
+                // Plot Open
+                Open[index] = Open[index - 1];
+                //openprice = MarketSeries.Open[index];
+            }
+ 
+            // Plot todays close
+            DateTime today = DateTime.Now.Date;
+            if (openTime.Date != today)
+                return;
+        }
+    }
+}
