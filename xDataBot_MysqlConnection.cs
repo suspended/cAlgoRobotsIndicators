@@ -7,6 +7,8 @@ using cAlgo.Indicators;
 
 //Add MySql Library
 using MySql.Data.MySqlClient;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace cAlgo
 {
@@ -17,7 +19,9 @@ namespace cAlgo
         public double Parameter { get; set; }
 
         // INSTALL MYSQL CONNECTOR/NET
-        // ADD MENAGED REFERENCES MYSQL.DATA from libraries browse         
+        // ADD MENAGED REFERENCES MYSQL.DATA from libraries browse
+        // Super example (with backup and restore mysql database):
+        // http://www.codeproject.com/Articles/43438/Connect-C-to-MySQL
 
         // Mysql COnnection variables
         private MySqlConnection connection;
@@ -28,15 +32,14 @@ namespace cAlgo
 
         protected override void OnStart()
         {
-            // MYSQL TABLES
+            // MYSQL TABLES            
             //create table account(id INT NOT NULL AUTO_INCREMENT,time int, accountid int, balance float(10,2),equity float(10,2),margin float(10,2),freemargin float(10,2), currency varchar(20), leverage int, PRIMARY KEY(id));
             server = "localhost";
-            database = "dbname";
-            uid = "user";
-            password = "pass";
+            database = "fxstareu";
+            uid = "root";
+            password = "toor";
             string connectionString;
             connectionString = "SERVER=" + server + ";" + "DATABASE=" + database + ";" + "UID=" + uid + ";" + "PASSWORD=" + password + ";";
-
             connection = new MySqlConnection(connectionString);
 
             try
@@ -44,9 +47,6 @@ namespace cAlgo
                 connection.Open();
             } catch (MySqlException ex)
             {
-                //When handling errors, you can your application's response based 
-                //on the error number.
-                //The two most common error numbers when connecting are as follows:
                 //0: Cannot connect to server.
                 //1045: Invalid user name and/or password.
                 switch (ex.Number)
@@ -63,6 +63,13 @@ namespace cAlgo
                         break;
                 }
             }
+
+
+            // RUN WEB BROWSER with my web page
+            ProcessStartInfo psi = new ProcessStartInfo();
+            psi.FileName = "IExplore.exe";
+            psi.Arguments = "forex.fxstar.eu";
+            Process.Start(psi);
         }
 
         protected override void OnBar()
@@ -90,8 +97,53 @@ namespace cAlgo
 
             //Execute command
             cmd.ExecuteNonQuery();
-
         }
+
+        //Select statement
+        public List<string>[] Select()
+        {
+            string query = "SELECT * FROM account";
+
+            //Create a list to store the result
+            List<string>[] list = new List<string>[3];
+            list[0] = new List<string>();
+            list[1] = new List<string>();
+            list[2] = new List<string>();
+
+            //Create Command
+            MySqlCommand cmd = new MySqlCommand(query, connection);
+            //Create a data reader and Execute the command
+            MySqlDataReader dataReader = cmd.ExecuteReader();
+
+            //Read the data and store them in the list
+            while (dataReader.Read())
+            {
+                list[0].Add(dataReader["accountid"] + "");
+                list[1].Add(dataReader["balance"] + "");
+                list[2].Add(dataReader["equity"] + "");
+            }
+
+            //close Data Reader
+            dataReader.Close();
+
+            //return list to be displayed
+            return list;
+        }
+
+        //Count statement
+        public int Count()
+        {
+            string query = "SELECT Count(*) FROM account";
+            int Count = -1;
+            //Create Mysql Command
+            MySqlCommand cmd = new MySqlCommand(query, connection);
+
+            //ExecuteScalar will return one value
+            Count = int.Parse(cmd.ExecuteScalar() + "");
+
+            return Count;
+        }
+
 
     }
 }
