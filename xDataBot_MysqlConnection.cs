@@ -99,6 +99,35 @@ namespace cAlgo
             cmd.ExecuteNonQuery();
         }
 
+        //Insert statement
+        public void Insert(string Currency = "GBPJPY")
+        {
+            // Current UNIX timestamp
+            //Int32 Stamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+            // Put your core logic here
+            MarketSeries data = MarketData.GetSeries(Currency, TimeFrame.Weekly);
+            DataSeries series = data.Close;
+            int index = series.Count - 1;
+
+            double close = data.Close[index];
+            double high = data.High[index];
+            double low = data.Low[index];
+            double open = data.Open[index];
+            Int32 opentime = (Int32)(data.OpenTime[index].Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+            Print(open);
+
+            // mysql query
+            //string query = "INSERT INTO account (time, accountid, balance, equity) VALUES('" + Stamp + "','" + Account.Number + "', '" + Account.Balance + "', '" + Account.Equity + "')";
+            string query = "INSERT INTO " + Currency + " (time, open, close, low, high) VALUES('" + opentime + "','" + open + "', '" + close + "', '" + low + "', '" + high + "')";
+
+            //create command and assign the query and connection from the constructor
+            MySqlCommand cmd = new MySqlCommand(query, connection);
+
+            //Execute command
+            cmd.ExecuteNonQuery();
+        }
         //Select statement
         public List<string>[] Select()
         {
