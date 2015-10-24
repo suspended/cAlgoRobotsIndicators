@@ -1,14 +1,19 @@
+# Download and install Mysql Connector/.NET from:
+# https://dev.mysql.com/downloads/connector/net/6.9.html
+# and add reference file Mysql.Data
+
 using System;
 using System.Linq;
 using cAlgo.API;
 using cAlgo.API.Indicators;
 using cAlgo.API.Internals;
 using cAlgo.Indicators;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 //Add MySql Library
 using MySql.Data.MySqlClient;
-using System.Collections.Generic;
-using System.Diagnostics;
+
 
 
 namespace cAlgo
