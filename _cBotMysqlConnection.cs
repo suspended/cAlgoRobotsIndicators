@@ -9,20 +9,19 @@ using cAlgo.API.Indicators;
 using cAlgo.API.Internals;
 using cAlgo.Indicators;
 using System.Collections.Generic;
+// run browser
 using System.Diagnostics;
 
 //Add MySql Library
 using MySql.Data.MySqlClient;
 
-
-
 namespace cAlgo
 {
-    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.FullAccess)]
+    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.Internet | AccessRights.FileSystem | AccessRights.FullAccess)]
     public class FxStarEu : Robot
     {
-        [Parameter(DefaultValue = 0.0)]
-        public double Parameter { get; set; }
+        [Parameter(DefaultValue = 1)]
+        public int TimerSeconds { get; set; }
 
         // Mysql COnnection variables
         private MySqlConnection connection;
@@ -35,6 +34,22 @@ namespace cAlgo
 
         protected override void OnStart()
         {
+            Timer.Start(TimerSeconds);
+            //start timer with 1 second interval
+
+            // MYSQL TABLES            
+            //create table account(id INT NOT NULL AUTO_INCREMENT,time int, accountid int, balance float(10,2),equity float(10,2),margin float(10,2),freemargin float(10,2), currency varchar(20), leverage int, PRIMARY KEY(id));
+            server = "localhost";
+            database = "fxstar";
+            uid = "user";
+            password = "pass";
+            string connectionString;
+            connectionString = "SERVER=" + server + ";" + "DATABASE=" + database + ";" + "UID=" + uid + ";" + "PASSWORD=" + password + ";";
+            connection = new MySqlConnection(connectionString);
+
+        }
+        protected override void OnTimer()
+        {
             /*
             private Regression cog;
             cog = Indicators.GetIndicator<Regression>(3, 2000, 2);
@@ -44,16 +59,45 @@ namespace cAlgo
             Print("Regression: " + up + " low " + dn);
             */
 
+            try
+            {
+                connection.Open();
+            } catch (MySqlException ex)
+            {
 
-            // MYSQL TABLES            
-            //create table account(id INT NOT NULL AUTO_INCREMENT,time int, accountid int, balance float(10,2),equity float(10,2),margin float(10,2),freemargin float(10,2), currency varchar(20), leverage int, PRIMARY KEY(id));
-            server = "localhost";
-            database = "baza";
-            uid = "user";
-            password = "pass";
-            string connectionString;
-            connectionString = "SERVER=" + server + ";" + "DATABASE=" + database + ";" + "UID=" + uid + ";" + "PASSWORD=" + password + ";";
-            connection = new MySqlConnection(connectionString);
+                //0: Cannot connect to server.
+                //1045: Invalid user name and/or password.
+
+                switch (ex.Number)
+                {
+                    case 0:
+                        Print("Cannot connect to server.  Contact administrator");
+                        break;
+
+                    case 1045:
+                        Print("Invalid username/password, please try again");
+                        break;
+                    default:
+                        Print("Connected");
+                        break;
+                }
+
+            }
+
+            try
+            {
+                PositionsAdd();
+            } catch (Exception ee)
+            {
+                Print(ee);
+            }
+
+            connection.Close();
+        }
+
+        protected override void OnBar()
+        {
+
             try
             {
                 connection.Open();
@@ -95,30 +139,17 @@ namespace cAlgo
             {
                 Print(ee);
             }
-
-            try
-            {
-                PositionsAdd();
-            } catch (Exception ee)
-            {
-                Print(ee);
-            }
-
-
+            connection.Close();
         }
 
-        protected override void OnTick()
-        {
-
-        }
-
-        //Insert statement
+        //====================================================================================================================
+        // Insert()
+        //====================================================================================================================
         public void Insert(string Currency = "GBPJPY")
         {
             // Current UNIX timestamp
             //Int32 Stamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
 
-            // Put your core logic here
             MarketSeries data = MarketData.GetSeries(Currency, TimeFrame.Weekly);
             DataSeries series = data.Close;
             int index = series.Count - 1;
@@ -131,7 +162,6 @@ namespace cAlgo
 
             Print(open);
 
-            // mysql query
             //string query = "INSERT INTO account (time, accountid, balance, equity) VALUES('" + Stamp + "','" + Account.Number + "', '" + Account.Balance + "', '" + Account.Equity + "')";
             string query = "INSERT INTO " + Currency + " (time, open, close, low, high) VALUES('" + opentime + "','" + open + "', '" + close + "', '" + low + "', '" + high + "')";
 
@@ -142,7 +172,9 @@ namespace cAlgo
             cmd.ExecuteNonQuery();
         }
 
-        //Balance statement
+        //====================================================================================================================
+        // Balance()
+        //====================================================================================================================
         public void Balance()
         {
             Int32 Stamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
@@ -152,9 +184,9 @@ namespace cAlgo
             Print("Account balance added.");
         }
 
-//====================================================================================================================
-//                                                                                          Get Positions
-//====================================================================================================================
+        //====================================================================================================================
+        // PositionAdd()                                                                                         
+        //====================================================================================================================
         public void PositionsAdd()
         {
             foreach (var position in Positions)
@@ -165,7 +197,18 @@ namespace cAlgo
                 {
                     Int32 EntryTime = (Int32)(position.EntryTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
 
-                    string query = "INSERT INTO OpenSignal (id, symbol, volume, type, opent, openp, account) VALUES('" + position.Id + "','" + position.SymbolCode + "', '" + position.Volume + "','BUY','" + EntryTime + "','" + position.EntryPrice + "','" + Account.Number + "')";
+                    double? sl = position.StopLoss;
+                    if (sl == null)
+                    {
+                        sl = 0;
+                    }
+                    double? tp = position.TakeProfit;
+                    if (tp == null)
+                    {
+                        tp = 0;
+                    }
+
+                    string query = "INSERT INTO OpenSignal (id, symbol, volume, type, opent, openp, account, sl, tp) VALUES('" + position.Id + "','" + position.SymbolCode + "', '" + position.Volume + "','BUY','" + EntryTime + "','" + position.EntryPrice + "','" + Account.Number + "','" + sl + "','" + tp + "') ON DUPLICATE KEY UPDATE sl='" + sl + "', tp='" + tp + "'";
 
                     try
                     {
@@ -174,7 +217,7 @@ namespace cAlgo
                         Print("Add Position " + position.Id);
                     } catch
                     {
-                        Print("Duplicate position");
+                        Print("Error BUY " + position.Id);
                     }
 
 
@@ -185,8 +228,20 @@ namespace cAlgo
                 {
                     Int32 EntryTime = (Int32)(position.EntryTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
 
-                    string query = "INSERT INTO OpenSignal (id, symbol, volume, type, opent, openp, account) VALUES('" + position.Id + "','" + position.SymbolCode + "', '" + position.Volume + "','SELL','" + EntryTime + "','" + position.EntryPrice + "','" + Account.Number + "')";
+                    //string query = "INSERT INTO OpenSignal (id, symbol, volume, type, opent, openp, account) VALUES('" + position.Id + "','" + position.SymbolCode + "', '" + position.Volume + "','SELL','" + EntryTime + "','" + position.EntryPrice + "','" + Account.Number + "')";
 
+                    double? sl = position.StopLoss;
+                    if (sl == null)
+                    {
+                        sl = 0;
+                    }
+                    double? tp = position.TakeProfit;
+                    if (tp == null)
+                    {
+                        tp = 0;
+                    }
+
+                    string query = "INSERT INTO OpenSignal (id, symbol, volume, type, opent, openp, account, sl, tp) VALUES('" + position.Id + "','" + position.SymbolCode + "', '" + position.Volume + "','SELL','" + EntryTime + "','" + position.EntryPrice + "','" + Account.Number + "','" + sl + "','" + tp + "') ON DUPLICATE KEY UPDATE sl='" + sl + "', tp='" + tp + "'";
                     try
                     {
                         MySqlCommand cmd = new MySqlCommand(query, connection);
@@ -194,7 +249,7 @@ namespace cAlgo
                         Print("Add Position " + position.Id);
                     } catch
                     {
-                        Print("Duplicate position" + position.Id);
+                        Print("Error SELL " + position.Id);
                     }
                 }
 
@@ -227,3 +282,11 @@ namespace cAlgo
         }
     }
 }
+
+/*
+    // RUN WEB BROWSER with my web page
+    ProcessStartInfo psi = new ProcessStartInfo();
+    psi.FileName = "IExplore.exe";
+    psi.Arguments = "forex.fxstar.eu";            
+    Process.Start(psi);
+*/
