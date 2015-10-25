@@ -75,6 +75,9 @@ CREATE TABLE IF NOT EXISTS `GBPJPY` (
   `close` float(10,6) DEFAULT '0',
   `low` float(10,6) DEFAULT '0',
   `high` float(10,6) DEFAULT '0',
+  `reg` float(10,6) DEFAULT '0',
+  `reghigh` float(10,6) DEFAULT '0',  
+  `reglow` float(10,6) DEFAULT '0',
   UNIQUE KEY `time` (`time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -84,5 +87,8 @@ CREATE TABLE IF NOT EXISTS `EURUSD` (
   `close` float(10,6) DEFAULT '0',
   `low` float(10,6) DEFAULT '0',
   `high` float(10,6) DEFAULT '0',
+  `reg` float(10,6) DEFAULT '0',
+  `reghigh` float(10,6) DEFAULT '0',  
+  `reglow` float(10,6) DEFAULT '0',
   UNIQUE KEY `time` (`time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
