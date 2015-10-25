@@ -21,13 +21,14 @@ USE db;
 # Create copier user with ip address and only select privilages
 GRANT SELECT ON database.* TO user@'1.2.3.%' IDENTIFIED BY 'password';
 #GRANT SELECT, INSERT, DELETE ON database TO username@'localhost' IDENTIFIED BY 'password';
-
+# GRANT ALL PRIVILEGES ON * . * TO  'exp'@'192.168.1.1' IDENTIFIED BY PASSWORD 'secret' WITH GRANT OPTION MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0 ;
 # create user with password
 CREATE USER 'user'@'localhost' IDENTIFIED BY 'pass';
 GRANT ALL PRIVILEGES ON db.* TO 'user'@'localhost';
 GRANT ALL PRIVILEGES ON *.* TO 'user'@'localhost';
 # GRANT ALL PRIVILEGES ON *.* TO 'USERNAME'@'1.2.3.4' IDENTIFIED BY 'PASSWORD' WITH GRANT OPTION;
 # GRANT ALL PRIVILEGES ON *.* TO 'USERNAME'@'%' IDENTIFIED BY 'PASSWORD' WITH GRANT OPTION;
+# GRANT  ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE TEMPORARY TABLES, CREATE USER, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, FILE, INDEX, INSERT, LOCK TABLES, PROCESS, REFERENCES, RELOAD, REPLICATION CLIENT, REPLICATION SLAVE, SELECT, SHOW DATABASES, SHOW VIEW, SHUTDOWN, SUPER, TRIGGER, UPDATE ON  *.* TO 'testing'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 
 # [type of permission]
@@ -39,9 +40,9 @@ FLUSH PRIVILEGES;
 # SELECT allows them to use the Select command to read through databases
 # UPDATE allow them to update table rows
 # GRANT OPTION allows them to grant or remove other users' privileges
-
+    
 # if you need revoke permissions
-REVOKE [type of permission] ON [database name].[table name] FROM ‘[username]’@‘localhost’;
+REVOKE [type of permission] ON [database name].[table name] FROM '[username]'@'localhost';
 REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'USERNAME'@'%';
 REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'USERNAME'@'1.2.3.4';
 
