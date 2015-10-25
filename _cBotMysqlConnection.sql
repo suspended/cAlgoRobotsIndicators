@@ -49,10 +49,10 @@ CREATE TABLE IF NOT EXISTS `OpenSignal` (
   `volume` float DEFAULT '0',
   `type` varchar(250) DEFAULT '0',
   `opent` bigint(21) NOT NULL DEFAULT '0',
-  `openp` float DEFAULT '0',
-  `sl` float DEFAULT '0',
-  `tp` float DEFAULT '0',
-  `time` bigint(21) NOT NULL DEFAULT '0',
+  `openp` float(10,6) DEFAULT '0',
+  `sl` float(10,6) DEFAULT '0',
+  `tp` float(10,6) DEFAULT '0',
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `account` varchar(250) DEFAULT '0',
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -61,10 +61,10 @@ CREATE TABLE IF NOT EXISTS `OpenSignal` (
 CREATE TABLE IF NOT EXISTS `CloseSignal` (
   `id` varchar(250) DEFAULT NULL,
   `closet` bigint(21) NOT NULL DEFAULT '0',
-  `closep` float DEFAULT '0',
-  `profit` float DEFAULT '0',
-  `pips` float DEFAULT '0',
-  `time` bigint(21) NOT NULL DEFAULT '0',
+  `closep` float(10,6) DEFAULT '0',
+  `profit` float(10,6) DEFAULT '0',
+  `pips` float(10,2) DEFAULT '0',
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `account` varchar(250) DEFAULT '0',
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
