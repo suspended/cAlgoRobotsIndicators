@@ -18,10 +18,16 @@ CREATE DATABASE IF NOT EXISTS `db` DEFAULT CHARACTER SET utf8 COLLATE utf8_gener
 # use database
 USE db;
 
+# Create copier user with ip address and only select privilages
+GRANT SELECT ON database.* TO user@'1.2.3.%' IDENTIFIED BY 'password';
+#GRANT SELECT, INSERT, DELETE ON database TO username@'localhost' IDENTIFIED BY 'password';
+
 # create user with password
 CREATE USER 'user'@'localhost' IDENTIFIED BY 'pass';
 GRANT ALL PRIVILEGES ON db.* TO 'user'@'localhost';
 GRANT ALL PRIVILEGES ON *.* TO 'user'@'localhost';
+# GRANT ALL PRIVILEGES ON *.* TO 'USERNAME'@'1.2.3.4' IDENTIFIED BY 'PASSWORD' WITH GRANT OPTION;
+# GRANT ALL PRIVILEGES ON *.* TO 'USERNAME'@'%' IDENTIFIED BY 'PASSWORD' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 
 # [type of permission]
@@ -36,6 +42,8 @@ FLUSH PRIVILEGES;
 
 # if you need revoke permissions
 REVOKE [type of permission] ON [database name].[table name] FROM ‘[username]’@‘localhost’;
+REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'USERNAME'@'%';
+REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'USERNAME'@'1.2.3.4';
 
 # Delete user
 DROP USER 'user'@'localhost';
@@ -92,3 +100,5 @@ CREATE TABLE IF NOT EXISTS `EURUSD` (
   `reglow` float(10,6) DEFAULT '0',
   UNIQUE KEY `time` (`time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
